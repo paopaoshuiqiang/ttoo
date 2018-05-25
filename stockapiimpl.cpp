@@ -1,5 +1,4 @@
-
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #pragma once
 #include "stdafx.h"
 #include <string>
@@ -21,6 +20,8 @@
 #include <string.h>
 
 #include <iomanip>                                  // setprecision 放在最后防止cout is ambious
+
+using namespace std;
 
 #ifdef WIN32
 #define GET_ACCURATE_TIME(v) 			\
@@ -131,7 +132,10 @@ void CTradeSpi::OnRspOrderInsert(CTORATstpInputOrderField *pInputOrderField, CTO
 
 void CTradeSpi::OnRspOrderAction(CTORATstpInputOrderActionField *pInputOrderActionField, CTORATstpRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
+	cout<<"撤单代码："<< pInputOrderActionField->OrderRef <<endl;
+	cout<<endl;
 	if(pRspInfo!=nullptr){
+		
 		printf("CTradeSpi::OnRspOrderAction:ErrorID=%d,ErrorMsg=%s\n",pRspInfo->ErrorID,pRspInfo->ErrorMsg);
 	}
 }
@@ -156,7 +160,7 @@ void CTradeSpi::OnRspQryPosition(CTORATstpPositionField *pPosition, CTORATstpRsp
 		
 		CTORATstpQryOrderField Qryfield;
 		memset(&Qryfield, 0, sizeof(CTORATstpQryOrderField));
-		strcpy(Qryfield.InvestorID, g_pInvestorID);
+		strcpy_s(Qryfield.InvestorID, g_pInvestorID);
 		//委托查询
 		m_pStockApi->m_pTradeApi->ReqQryOrder(&Qryfield, 2);
 	}
@@ -256,6 +260,15 @@ void CMktSpi::OnRspUserLogin(CTORATstpRspUserLoginField *pRspUserLogin, CTORATst
 	}
 }
 
+
+////////////////////////////////////////
+//接口实现类
+///////////////////////////////////////
+
+
+
+
+
 CStockApi::CStockApi()
 {
 	m_pTradeApi=nullptr;
@@ -338,6 +351,10 @@ void CStockApi::Run()
 	}
 }
 
+
+///////////////////////////////////////
+//接口初始 以及参数定义
+///////////////////////////////////////
 void CStockApi::Init(char * pTdFrontAddress,char * pMdFrontAddress)
 {
 	///初始化行情
@@ -360,6 +377,18 @@ void CStockApi::Init(char * pTdFrontAddress,char * pMdFrontAddress)
 	m_setTargetSecurity.insert("2000001");
 	CThread::Create();
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 void CStockApi::Release()
 {
@@ -409,7 +438,12 @@ int CStockApi::ReqOrderInsert(CTORATstpInputOrderField *pInputOrder)
 	strcpy_s(pInputOrder->OrderRef,GetMaxOrderRef().c_str());
 	m_pTradeApi->ReqOrderInsert(pInputOrder,stoi(pInputOrder->OrderRef));
 	PushOrderKey(to_string(m_nFrontID)+to_string(m_nSessionID)+pInputOrder->OrderRef);//设立发单map 加入其发单编号
-	m_mapAppendOrder[pInputOrder->SecurityID].push_back(TransferOrder(*pInputOrder));
+	
+	/*inputorder里面没有frontid和sessionid
+	frontid+sessionid+orderref唯一区分一笔报单
+	撤单的时候要填sessionid和frontid所以要记下来*/
+
+	m_mapAppendOrder[pInputOrder->SecurityID].push_back(TransferOrder(*pInputOrder)); //
 	return 0;
 }
 
@@ -517,9 +551,9 @@ void CStockApi::RtnDepthMarketData(CTORATstpMarketDataField *pDepthMarketData)
 			return;
 		}
 
-		///打印出当前仓位
-		printf("%d,%d,%d\n",pPosition->CurrentPosition,pPosition->AvailablePosition,pPosition->TodayBSFrozen);
-
+		if(pPosition!=nullptr){
+			printf("%d,%d,%d\n",pPosition->CurrentPosition,pPosition->AvailablePosition,pPosition->TodayBSFrozen);
+		}
 		///涨跌幅在-1%~1%之间就买入
 		if((r>-0.01&&r<0.01)){
 			LimitBuy(pDepthMarketData->ExchangeID,pDepthMarketData->SecurityID,pDepthMarketData->LastPrice,1000);
