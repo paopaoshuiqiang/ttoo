@@ -220,9 +220,9 @@ public:
 
 	vector<HQCross>		PoolHQ;							
 
-	void				CheckPreHQ();
+	void				TCheckPreHQ();
 
-	void Init_PoolHQ (void);   int Update_PoolHQ  (MarketData& md,string House);
+	void Init_PoolHQ (void);   int Update_PoolHQ  (CTORATstpMarketDataField *pDepthMarketData);
 
 
 
